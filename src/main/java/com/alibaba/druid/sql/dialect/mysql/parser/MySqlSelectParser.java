@@ -297,29 +297,30 @@ public class MySqlSelectParser extends SQLSelectParser {
         if (lexer.token() == Token.FOR) {
             lexer.nextToken();
 
-            if (lexer.token() == Token.UPDATE) {
-                lexer.nextToken();
+            if (this.lexer.token() == Token.UPDATE) {
                 queryBlock.setForUpdate(true);
+            } else {
+                this.acceptIdentifier("SHARE");
+                queryBlock.setForShare(true);
+            }
 
-                if (lexer.identifierEquals(FnvHash.Constants.NO_WAIT)
-                        || lexer.identifierEquals(FnvHash.Constants.NOWAIT)) {
-                    lexer.nextToken();
-                    queryBlock.setNoWait(true);
-                } else if (lexer.identifierEquals(FnvHash.Constants.WAIT)) {
-                    lexer.nextToken();
+            this.lexer.nextToken();
+            if (!this.lexer.identifierEquals(Constants.NO_WAIT) && !this.lexer.identifierEquals(Constants.NOWAIT)) {
+                if (this.lexer.identifierEquals(Constants.WAIT)) {
+                    this.lexer.nextToken();
                     SQLExpr waitTime = this.exprParser.primary();
                     queryBlock.setWaitTime(waitTime);
                 }
-
-                if (lexer.identifierEquals(FnvHash.Constants.SKIP)) {
-                    lexer.nextToken();
-                    acceptIdentifier("LOCKED");
-                    queryBlock.setSkipLocked(true);
-                }
             } else {
-                acceptIdentifier("SHARE");
-                queryBlock.setForShare(true);
+                this.lexer.nextToken();
+                queryBlock.setNoWait(true);
             }
+
+            if (this.lexer.identifierEquals(Constants.SKIP)) {
+                this.lexer.nextToken();
+                this.acceptIdentifier("LOCKED");
+                queryBlock.setSkipLocked(true);
+            } 
         }
 
         if (lexer.token() == Token.LOCK) {
